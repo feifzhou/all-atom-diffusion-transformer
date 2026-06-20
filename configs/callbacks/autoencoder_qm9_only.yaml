@@ -10,6 +10,7 @@ model_checkpoint:
   monitor: "val_qm9/match_rate"
   mode: "max"
   save_last: True
+  save_top_k: 0
 
 # early_stopping:
 #   monitor: "val/match_rate"

@@ -11,6 +11,7 @@ model_checkpoint:
   monitor: "val_qm9/valid_rate"
   mode: "max"
   save_last: True
+  save_top_k: 0
 
 # early_stopping:
 #   monitor: "val/valid_rate"
