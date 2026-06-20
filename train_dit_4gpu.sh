@@ -46,7 +46,7 @@ python src/train_diffusion.py \
     logger=csv \
     test=False \
     name="dit_s_qm9_latent8" \
-    trainer.max_epochs=10 \
+    trainer.max_epochs=2000 \
     trainer.check_val_every_n_epoch=1 \
     diffusion_module.autoencoder_ckpt=$VAE_CHECKPOINT \
     diffusion_module.denoiser.d_x=8 \

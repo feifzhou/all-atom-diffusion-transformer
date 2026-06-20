@@ -37,7 +37,7 @@ python src/train_autoencoder.py \
     logger=csv \
     test=False \
     name="vae_qm9_4gpu_scaled" \
-    trainer.max_epochs=10 \
+    trainer.max_epochs=5000 \
     trainer.devices=4 \
     data.datamodule.batch_size.train=1024 \
     autoencoder_module.latent_dim=8 \
