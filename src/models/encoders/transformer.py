@@ -6,7 +6,10 @@ from typing import Any, Dict, Tuple
 import torch
 from torch import nn
 from torch_geometric.utils import to_dense_batch
-from torch_scatter import scatter
+try:
+    from torch_scatter import scatter
+except ImportError:
+    from src.models.components.scatter_fallback import scatter
 
 
 def get_index_embedding(indices, emb_dim, max_len=2048):

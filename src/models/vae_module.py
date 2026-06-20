@@ -12,7 +12,10 @@ from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
 from torch.nn import ModuleDict
 from torch_geometric.data import Data
-from torch_scatter import scatter
+try:
+    from torch_scatter import scatter
+except ImportError:
+    from src.models.components.scatter_fallback import scatter
 from torchmetrics import MeanMetric
 
 from src.eval.crystal_reconstruction import CrystalReconstructionEvaluator
