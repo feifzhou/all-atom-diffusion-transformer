@@ -21,8 +21,16 @@ from pymatgen.core.lattice import Lattice
 from pymatgen.core.structure import Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pyxtal import pyxtal
-from torch_scatter import segment_coo, segment_csr
 from tqdm import tqdm
+
+try:
+    from torch_scatter import segment_coo, segment_csr
+except ImportError:
+    # Dummy fallback for QM9-only training
+    def segment_coo(*args, **kwargs):
+        raise NotImplementedError("segment_coo requires torch_scatter (only needed for crystals/MP20)")
+    def segment_csr(*args, **kwargs):
+        raise NotImplementedError("segment_csr requires torch_scatter (only needed for crystals/MP20)")
 
 faulthandler.enable()
 

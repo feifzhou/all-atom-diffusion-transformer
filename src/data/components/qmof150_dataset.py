@@ -6,11 +6,15 @@ from typing import Callable, List, Optional
 
 import numpy as np
 import torch
-from mofchecker import MOFChecker
 from torch_geometric.data import Data, InMemoryDataset
 from tqdm import tqdm
 
 from src.data.components.preprocessing_utils import build_crystal, build_crystal_graph
+
+try:
+    from mofchecker import MOFChecker
+except ImportError:
+    MOFChecker = None  # Only needed for QMOF150, not QM9
 
 warnings.simplefilter("ignore", UserWarning)
 warnings.simplefilter("ignore", FutureWarning)
