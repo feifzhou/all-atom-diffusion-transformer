@@ -1,0 +1,9 @@
+# Local CSV logger - no online uploads
+
+csv:
+  _target_: lightning.pytorch.loggers.csv_logs.CSVLogger
+  save_dir: "${paths.output_dir}"
+  name: "csv_logs"
+  version: null
+  prefix: ""
+  flush_logs_every_n_steps: 100
