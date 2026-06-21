@@ -1,0 +1,60 @@
+# Null-op ("identity") autoencoder for QM9: latent = concat(one_hot(type), pos), 8-dim.
+# No learned compression; used to train the diffusion generator directly on data space.
+_target_: src.models.identity_vae_module.IdentityAutoencoderLitModule
+
+# This AE has no parameters: no encoder/decoder modules are built. Only the width of
+# the decoder's atom-type logits is needed (must match the rest of the codebase).
+max_num_elements: 100
+
+latent_dim: 8  # 5 QM9 element classes (H,C,N,O,F) + 3 coords
+
+# Per-molecule centering of the latent before diffusion.
+center_pos: true     # subtract coordinate centroid (recommended; translation-invariant)
+center_types: false  # subtract per-molecule mean one-hot (off by default; see notes)
+
+# Fixed global standardization z <- (z - mean) / std (per-channel, dataset statistics).
+# Puts one-hot and coordinate channels on a common ~unit scale matching the N(0,1) prior.
+# When true, run scripts/make_identity_vae_ckpt.py to fit the stats onto the checkpoint.
+standardize: false
+
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 0.0001
+  weight_decay: 0.0
+
+scheduler: null
+
+scheduler_frequency: ${trainer.check_val_every_n_epoch}
+
+# Identity AE: no reconstruction error and no regularisation to optimise.
+loss_weights:
+  loss_atom_types:
+    mp20: 0.0
+    qm9: 1.0
+  loss_lengths:
+    mp20: 0.0
+    qm9: 0.0
+  loss_angles:
+    mp20: 0.0
+    qm9: 0.0
+  loss_frac_coords:
+    mp20: 0.0
+    qm9: 0.0
+  loss_pos:
+    mp20: 0.0
+    qm9: 10.0
+  loss_kl:
+    mp20: 0.0
+    qm9: 0.0
+
+augmentations:
+  noise: 0.0  # no corruption objective for the identity AE
+  frac_coords: false
+  pos: false
+
+visualization:
+  visualize: true
+  save_dir: ${paths.viz_dir}/
+
+compile: false

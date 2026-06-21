@@ -1,6 +1,10 @@
 _target_: src.models.ldm_module.LatentDiffusionLitModule
 
 autoencoder_ckpt: ""  # path to VAE checkpoint
+# Which LitModule loads the autoencoder checkpoint. Transformer & Equiformer VAEs both
+# use the default; switch to the identity AE for no-compression experiments:
+#   src.models.identity_vae_module.IdentityAutoencoderLitModule
+autoencoder_cls: src.models.vae_module.VariationalAutoencoderLitModule
 
 denoiser:
   _target_: src.models.denoisers.dit.DiT

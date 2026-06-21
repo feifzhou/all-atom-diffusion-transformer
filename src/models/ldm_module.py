@@ -6,6 +6,7 @@ import random
 import time
 from typing import Any, Dict, Literal, Tuple
 
+import hydra
 import numpy as np
 import pandas as pd
 import torch
@@ -87,6 +88,7 @@ class LatentDiffusionLitModule(LightningModule):
         scheduler: torch.optim.lr_scheduler.LRScheduler,
         scheduler_frequency: str,
         compile: bool,
+        autoencoder_cls: str = "src.models.vae_module.VariationalAutoencoderLitModule",
     ) -> None:
         super().__init__()
 
@@ -95,9 +97,15 @@ class LatentDiffusionLitModule(LightningModule):
         self.save_hyperparameters(logger=False)
 
         # autoencoder models (first-stage model)
+        # autoencoder_cls selects which LitModule loads the checkpoint. The transformer
+        # and equiformer VAEs are both VariationalAutoencoderLitModule (they differ only
+        # by the encoder/decoder stored in the checkpoint), while the identity AE needs
+        # its own subclass. Override from config/CLI, e.g.
+        #   ++diffusion_module.autoencoder_cls=src.models.identity_vae_module.IdentityAutoencoderLitModule
         self.autoencoder_ckpt = autoencoder_ckpt
-        log.info(f"Loading Autoencoder ckpt: {autoencoder_ckpt}")
-        self.autoencoder = VariationalAutoencoderLitModule.load_from_checkpoint(
+        log.info(f"Loading Autoencoder ({autoencoder_cls}) ckpt: {autoencoder_ckpt}")
+        autoencoder_class = hydra.utils.get_class(autoencoder_cls)
+        self.autoencoder = autoencoder_class.load_from_checkpoint(
             autoencoder_ckpt, map_location="cpu"
         )
         # freeze autoencoder
