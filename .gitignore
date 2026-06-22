@@ -155,3 +155,16 @@ configs/local/default.yaml
 
 # Aim logging
 .aim
+
+# Flux scheduler outputs
+flux-*.out
+
+# Training artifacts
+*.sh~
+tmp.*
+install_missing.sh
+monitor_vae.sh
+test_vae_resume.sh
+view_training.sh
+paper.pdf
+paper.txt

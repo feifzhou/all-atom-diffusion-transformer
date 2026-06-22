@@ -79,7 +79,7 @@ Matching the paper (arxiv:2410.01712) with modifications:
 
 **Deviations from paper**: 
 1. Added cosine LR scheduler (paper used flat 1e-4) to stabilize training and reduce loss spikes observed at constant LR
-2. Keep only 2 latest epoch checkpoints (`save_top_k=2`) to save disk space
+2. Keep only 1 latest epoch checkpoint + last.ckpt (`save_top_k=1`) to save disk space
 
 ## Training Script
 
@@ -156,13 +156,13 @@ model_checkpoint:
   monitor: null  # Don't require validation metrics for saving
   mode: "max"
   save_last: True
-  save_top_k: 2  # Keep only 2 latest epoch checkpoints to save disk space
+  save_top_k: 1  # Keep only 1 latest epoch checkpoint + last.ckpt (Lightning constraint)
   every_n_epochs: 30  # Save every 30 epochs (~30 min)
   save_on_train_epoch_end: True  # Save after training, not validation
 ```
 
 **Key changes**:
-- `save_top_k=2`: Keep only 2 latest epoch checkpoints (was -1 to keep all, then changed to save disk space)
+- `save_top_k=1`: Keep only 1 latest epoch checkpoint + last.ckpt (PyTorch Lightning constraint: save_top_k>1 requires monitor metric)
 - `monitor=null`: Decouple checkpoint saving from validation metrics
 - `save_on_train_epoch_end=True`: Save after training epochs, not validation
 
@@ -195,12 +195,23 @@ LATEST_CKPT="$WORK_DIR/logs/train_diffusion/checkpoints/last.ckpt"
 
 **Error**: `Key '_target_' is not in struct` - can't override fields in null config
 
-**Fix**: Use `+` prefix to append/create config instead of override:
+**Fix**: Use `+` prefix to append/create config instead of override, and `_partial_=true` for deferred instantiation:
 ```bash
 +diffusion_module.scheduler._target_=torch.optim.lr_scheduler.CosineAnnealingLR
++diffusion_module.scheduler._partial_=true
 +diffusion_module.scheduler.T_max=1200
 +diffusion_module.scheduler.eta_min=1e-5
 ```
+
+### 4. ModelCheckpoint Configuration Error (Fixed)
+
+**Problem**: `ModelCheckpoint(save_top_k=2, monitor=None) is not a valid configuration`
+
+**Root cause**: PyTorch Lightning requires `save_top_k=-1` (keep all) when `monitor=None`, or `save_top_k=1` to keep only latest
+
+**Fix**: Changed `save_top_k=2` to `save_top_k=1` in `configs/callbacks/diffusion_qm9_only.yaml`
+
+**Result**: Keeps 1 latest epoch checkpoint + `last.ckpt` = 2 total checkpoints
 
 ## Job Submission
 
@@ -283,12 +294,14 @@ This extracts `valid_rate` from flux output files where validation actually logg
 
 ## Current Training Status
 
-**As of 2026-06-22:**
+**As of 2026-06-22 14:20:**
 - Training started from scratch at epoch 0
 - Reached epoch 410 after 6 jobs (no LR scheduler)
-- Restarted with LR scheduler at epoch 410
-- Current chain: 12 jobs running with cosine annealing LR, expected final epoch ~1010
-- Checkpoint strategy: Keep 2 latest + last.ckpt (saves ~1 GB per 60 epochs)
+- Restarted with LR scheduler + checkpoint fixes at epoch 410
+- Current chain: 12 jobs (f3FyDbGfoKPD → f3FyDcn66yAX) with cosine annealing LR
+- Expected final epoch: ~1010 (50 epochs/job × 12 jobs)
+- Checkpoint strategy: Keep 1 latest epoch checkpoint + last.ckpt = 2 total
+- Current loss (epoch 414): 0.383, trajectory stable
 
 **Validation metrics trajectory:**
 ```
