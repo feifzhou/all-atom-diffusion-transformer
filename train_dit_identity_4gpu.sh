@@ -61,9 +61,9 @@ python src/train_diffusion.py \
     diffusion_module.denoiser.num_layers=12 \
     diffusion_module.denoiser.d_model=384 \
     diffusion_module.denoiser.nhead=6 \
-    diffusion_module.scheduler._target_=torch.optim.lr_scheduler.CosineAnnealingLR \
-    diffusion_module.scheduler.T_max=1200 \
-    diffusion_module.scheduler.eta_min=1e-5 \
+    +diffusion_module.scheduler._target_=torch.optim.lr_scheduler.CosineAnnealingLR \
+    +diffusion_module.scheduler.T_max=1200 \
+    +diffusion_module.scheduler.eta_min=1e-5 \
     $CKPT_ARG
 
 echo "=== Training completed ==="
