@@ -7,11 +7,13 @@ defaults:
 
 model_checkpoint:
   dirpath: ${paths.output_dir}/checkpoints
-  filename: "ldm-epoch@{epoch}-step@{step}-val_qm9_valid_rate@{val_qm9/valid_rate:.4f}"
-  monitor: "val_qm9/valid_rate"
+  filename: "ldm-epoch@{epoch}-step@{step}"
+  monitor: null
   mode: "max"
   save_last: True
-  save_top_k: 0
+  save_top_k: -1
+  every_n_epochs: 30
+  save_on_train_epoch_end: True
 
 # early_stopping:
 #   monitor: "val/valid_rate"
