@@ -2,6 +2,53 @@
 
 Experiment: All-atom Diffusion Transformer (DiT-S) with Identity VAE on QM9 dataset
 
+## Changes from Original Repository
+
+This fork (starting from commit `b9ce505f`) adds AMD GPU support and QM9-only training infrastructure. Summary of changes:
+
+### Infrastructure Changes
+1. **AMD GPU compatibility** (`9e6d5c9`): Added `torch_scatter` fallback for AMD GPUs lacking native scatter operations
+2. **Optional dependencies** (`d8417ad`): Made crystal/MOF dependencies (CifFile, PyXtal, QMOF) optional for QM9-only workflows
+3. **QM9-only training scripts** (`cdfdf55`, `1561dfd`): Added standalone training scripts with auto-resume for VAE and DiT
+4. **CSV logging** (`configs/logger/csv.yaml`): Added CSV logger for local metric tracking without W&B
+
+### Training Improvements
+5. **Auto-resume logic**: All training scripts detect and load latest checkpoint automatically
+6. **Checkpoint optimization** (`da82261`): 
+   - Decoupled checkpoint saving from validation metrics (`monitor=null`)
+   - Keep all epoch checkpoints (`save_top_k=-1`)
+   - Save after training epochs, not validation (`save_on_train_epoch_end=True`)
+7. **Flux scheduler integration**: Job submission scripts for LLNL Lassen cluster using Flux (not SLURM)
+
+### Model Additions
+8. **Identity VAE** (`d547ae8`): No-compression autoencoder for baseline DiT experiments
+   - `src/models/identity_vae_module.py`: Identity encoder/decoder (latent = concat(one_hot, pos))
+   - `scripts/make_identity_vae_ckpt.py`: Generate identity VAE checkpoint without training
+   - `configs/autoencoder_module/identity_vae.yaml`: Config for identity VAE
+
+### Training Configuration
+9. **Cosine LR scheduler** (`05d54fc`): Added to reduce loss spikes observed with flat LR
+   - `diffusion_module.scheduler._target_=torch.optim.lr_scheduler.CosineAnnealingLR`
+   - `T_max=1200`, `eta_min=1e-5`
+10. **Bug fixes** (`05d54fc`):
+    - Added missing PoseBusters metrics (`no_radicals`, `non-aromatic_ring_non-flatness`) to fix validation crash
+    - Fixed checkpoint auto-resume path
+
+### Documentation
+11. **RUNBOOK.md** (this file): Complete experiment documentation with hyperparameters, bug fixes, and reproducibility notes
+12. **ARCHITECTURE_NOTES.md** (`ec49b77`): Analysis of position embedding issue in transformer VAE
+13. **extract_val_metrics.sh**: Script to parse validation metrics from flux stdout
+
+### File Statistics
+- 28 files changed: +1523 insertions, -15 deletions
+- 10 new scripts added (training, testing, utilities)
+- 3 new model files (identity VAE, scatter fallback)
+- 3 documentation files added
+
+**Original repository**: https://github.com/facebookresearch/all-atom-diffusion-transformer (last upstream commit: `b9ce505f` - "Fix edge case for absurd MOFs", 2024)
+
+---
+
 ## Experiment Overview
 
 **Goal**: Establish baseline DiT training pipeline with no-compression identity VAE before scaling up to learned VAE.
