@@ -74,10 +74,12 @@ Matching the paper (arxiv:2410.01712) with modifications:
 | EMA decay | 0.9999 | Paper value |
 | Gradient clip | 1.0 norm | Default |
 | Validation frequency | Every 50 epochs | ~1x per hour |
-| Checkpoint frequency | Every 30 epochs | ~2x per hour |
+| Checkpoint frequency | Every 30 epochs | ~2x per hour, keep 2 latest |
 | Validation samples | 100 | Reduced from 1000 for speed |
 
-**Deviation from paper**: Added cosine LR scheduler (paper used flat 1e-4) to stabilize training and reduce loss spikes observed at constant LR.
+**Deviations from paper**: 
+1. Added cosine LR scheduler (paper used flat 1e-4) to stabilize training and reduce loss spikes observed at constant LR
+2. Keep only 2 latest epoch checkpoints (`save_top_k=2`) to save disk space
 
 ## Training Script
 
@@ -134,9 +136,9 @@ python src/train_diffusion.py \
     diffusion_module.denoiser.num_layers=12 \
     diffusion_module.denoiser.d_model=384 \
     diffusion_module.denoiser.nhead=6 \
-    diffusion_module.scheduler._target_=torch.optim.lr_scheduler.CosineAnnealingLR \
-    diffusion_module.scheduler.T_max=1200 \
-    diffusion_module.scheduler.eta_min=1e-5 \
+    +diffusion_module.scheduler._target_=torch.optim.lr_scheduler.CosineAnnealingLR \
+    +diffusion_module.scheduler.T_max=1200 \
+    +diffusion_module.scheduler.eta_min=1e-5 \
     $CKPT_ARG
 
 echo "=== Training completed ==="
@@ -154,13 +156,13 @@ model_checkpoint:
   monitor: null  # Don't require validation metrics for saving
   mode: "max"
   save_last: True
-  save_top_k: -1  # Keep all checkpoints (not just last)
+  save_top_k: 2  # Keep only 2 latest epoch checkpoints to save disk space
   every_n_epochs: 30  # Save every 30 epochs (~30 min)
   save_on_train_epoch_end: True  # Save after training, not validation
 ```
 
 **Key changes**:
-- `save_top_k=-1`: Keep all epoch checkpoints (was 0, only kept last.ckpt)
+- `save_top_k=2`: Keep only 2 latest epoch checkpoints (was -1 to keep all, then changed to save disk space)
 - `monitor=null`: Decouple checkpoint saving from validation metrics
 - `save_on_train_epoch_end=True`: Save after training epochs, not validation
 
@@ -185,6 +187,19 @@ model_checkpoint:
 **Fix**: Changed from glob pattern to fixed path:
 ```bash
 LATEST_CKPT="$WORK_DIR/logs/train_diffusion/checkpoints/last.ckpt"
+```
+
+### 3. Hydra Config Error for LR Scheduler (Fixed)
+
+**Problem**: `diffusion_module.scheduler._target_=...` failed because scheduler is `null` by default
+
+**Error**: `Key '_target_' is not in struct` - can't override fields in null config
+
+**Fix**: Use `+` prefix to append/create config instead of override:
+```bash
++diffusion_module.scheduler._target_=torch.optim.lr_scheduler.CosineAnnealingLR
++diffusion_module.scheduler.T_max=1200
++diffusion_module.scheduler.eta_min=1e-5
 ```
 
 ## Job Submission
@@ -270,9 +285,10 @@ This extracts `valid_rate` from flux output files where validation actually logg
 
 **As of 2026-06-22:**
 - Training started from scratch at epoch 0
-- Reached epoch 410 after 6 jobs
-- Cancelled and restarted with LR scheduler at epoch 410
-- Current chain: 12 jobs queued, expected final epoch ~1010
+- Reached epoch 410 after 6 jobs (no LR scheduler)
+- Restarted with LR scheduler at epoch 410
+- Current chain: 12 jobs running with cosine annealing LR, expected final epoch ~1010
+- Checkpoint strategy: Keep 2 latest + last.ckpt (saves ~1 GB per 60 epochs)
 
 **Validation metrics trajectory:**
 ```
