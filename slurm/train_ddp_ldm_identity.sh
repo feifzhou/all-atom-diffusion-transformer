@@ -45,8 +45,8 @@
 ###module list
 
 #! Load python environment
-source /private/home/myuser/.bashrc
-mamba activate myenv
+#source /private/home/myuser/.bashrc
+#mamba activate myenv
 
 ############################################################
 
